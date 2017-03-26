@@ -7,55 +7,106 @@ import (
 	"bytes"
 	"io"
 	"os"
-	//"encoding/json"
+	"encoding/json"
 )
 
 const (
 	CONSUMER = ""
 	SECRET = ""
+	USER = ""
 )
 
-func main() {
-	getAuth(CONSUMER, SECRET)
-	
+type msg struct {
+	Text string
+	ID int
 }
 
-func getAuth(login string, pass string) {
+func main() {
+	token := getAuth(CONSUMER, SECRET)
+	getMessages(token, USER)
+}
+
+func debugBody (input io.Reader) {
+	io.Copy(os.Stdout, input)
+}
+
+//fetches the last 3200 tweets from a given user
+func getMessages(token string, user string) {
+	//build & send twitter userinfo request
+	client := &http.Client{}
+	endpoint := "https://api.twitter.com/1.1/statuses/user_timeline.json"
+	endpoint += "?screen_name=" + user
+	endpoint += "&include_rts=false"
+	req, err := http.NewRequest("GET", endpoint, nil)
+	
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Add("Authorization", "Bearer " + token)
+	res, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer res.Body.Close()
+	
+	if res.StatusCode == 200 {
+		//decode json response
+		
+		var messages []msg
+		//debugBody(res.Body)
+		decoder := json.NewDecoder(res.Body)
+		err = decoder.Decode(&messages)
+		if err != nil {
+			panic(err)
+		}
+		
+		for i := range messages {
+			fmt.Println(messages[i].Text)
+		}
+	} else {
+		fmt.Println(res)
+		panic(res.Status)
+	}
+}
+
+func getAuth(login string, pass string) string {
 	//prepare consumer request
 	//we should URL encode (RFC 1738)
 	key := login + ":" + pass
 	creds := base64.StdEncoding.EncodeToString([]byte(key))
 	
-	//get OAUTH token
+	//build & send OAUTH token request
 	client := &http.Client{}
-	
 	endpoint := "https://api.twitter.com/oauth2/token"
 	body := bytes.NewBufferString("grant_type=client_credentials")
 	req, err := http.NewRequest("POST", endpoint, body)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 	req.Header.Add("Authorization", "Basic " + creds)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 	defer res.Body.Close()
-	fmt.Println("Status: " + res.Status)
 	
-	//raw read for debug
-	io.Copy(os.Stdout, res.Body)
-	fmt.Println()
-	
-	/*
-	var output struct{}
+	//decode json response
+	var output struct{
+		Errors string
+		Token_type string
+		Access_token string
+	}
 	decoder := json.NewDecoder(res.Body)
 	err = decoder.Decode(&output)
 	if err != nil {
+		fmt.Println("Status: " + res.Status)
 		fmt.Println("JSON Decoding error:")
-		//panic(err)
+		panic(err)
 	}
-	fmt.Println(output)
-	*/
+	if res.StatusCode != 200 {
+		panic(output.Errors)
+	}
+	
+	return output.Access_token
 }
