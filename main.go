@@ -22,8 +22,15 @@ type msg struct {
 }
 
 func main() {
-	token := getAuth(CONSUMER, SECRET)
-	getMessages(token, USER)
+	access_token := getAuth(CONSUMER, SECRET)
+	msgList := getMessages(access_token, USER)
+	
+	parseMessages(msgList)
+}
+
+func parseMessages(msgList []msg) {
+	for _, m := range msgList {
+	}
 }
 
 func debugBody (input io.Reader) {
@@ -31,7 +38,7 @@ func debugBody (input io.Reader) {
 }
 
 //fetches the last 3200 tweets from a given user
-func getMessages(token string, user string) {
+func getMessages(token string, user string) []msg {
 	//build & send twitter userinfo request
 	client := &http.Client{}
 	endpoint := "https://api.twitter.com/1.1/statuses/user_timeline.json"
@@ -51,18 +58,14 @@ func getMessages(token string, user string) {
 	
 	if res.StatusCode == 200 {
 		//decode json response
-		
 		var messages []msg
-		//debugBody(res.Body)
 		decoder := json.NewDecoder(res.Body)
 		err = decoder.Decode(&messages)
 		if err != nil {
 			panic(err)
 		}
 		
-		for i := range messages {
-			fmt.Println(messages[i].Text)
-		}
+		return messages
 	} else {
 		fmt.Println(res)
 		panic(res.Status)
