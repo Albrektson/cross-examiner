@@ -47,6 +47,7 @@ func main() {
 	case FINGERPRINT:
 		fmt.Println("Fingerprint comparison method under construction")
 	case ANGULAR:
+		fmt.Println("Angular comparison method under construction")
 	default:
 		panic("No test case chosen")
 	}
