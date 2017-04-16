@@ -158,6 +158,9 @@ func parseMessages(msgList []msg) {
 		webaddr, _ := regexp.Compile("([A-z0-9]+\\.)*([A-z0-9]+\\.[A-z]{2,})(/[A-z0-9]*)*")
 		text = webaddr.ReplaceAllString(text, "")
 
+		whitespace, _ := regexp.Compile("[[:space:]]")
+		text = whitespace.ReplaceAllString(text, " ")
+		
 		m.NormalizedText = text
 
 		//FieldsFunc: string -> []string, using the given delimiter
