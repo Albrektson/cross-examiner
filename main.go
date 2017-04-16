@@ -39,10 +39,12 @@ func main() {
 	msgList := getMessages(access_token, USER)
 	parseMessages(msgList)
 
+	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: 1}
+	dummyList := []msg{dummyMsg1, dummyMsg2}
+	parseMessages(dummyList)
 	switch TEST {
 	case MESSAGE:
-		dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: 1}
-		dumbCompare(msgList, dummyMsg1)
+		dumbCompare(msgList, dummyList)
 	case WORD:
 		dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: 1}
 		wordCompare(msgList, dummyMsg2)
@@ -100,12 +102,14 @@ func wordCompare(msgList []msg, message msg) {
 }
 
 //compares if any message in msgList equals another message
-func dumbCompare(msgList []msg, message msg) {
-	for _, m := range msgList {
-		if m.Text == message.Text {
-			fmt.Println("Found duplicate message:")
-			fmt.Printf("Text: %s\n", m.Text)
-			fmt.Printf("ID: %d\n", m.ID)
+func dumbCompare(msgList1 []msg, msgList2 []msg) {
+	for _, m1 := range msgList1 {
+		for _, m2 := range msgList2 {
+			if m1.Text == m2.Text {				
+				fmt.Println("Found duplicate messages:")
+				fmt.Printf("Text: [%s]\tID: [%d]\n", m1.Text, m1.ID)
+				fmt.Printf("Text: [%s]\tID: [%d]\n", m2.Text, m2.ID)
+			}
 		}
 	}
 }
