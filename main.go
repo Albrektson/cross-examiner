@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"regexp"
@@ -17,7 +18,7 @@ const (
 	CONSUMER = ""
 	SECRET = ""
 	USER = ""
-	TEST     = WORD
+	TEST     = FINGERPRINT
 )
 
 const (
@@ -41,7 +42,9 @@ func main() {
 
 	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: -1}
 	dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: -2}
-	dummyList := []msg{dummyMsg1, dummyMsg2}
+	dummyMsg3 := msg{Text: "Adding some messages to timeline.", ID: -3}
+	dummyMsg4 := msg{Text: "Selecting messages to include in timeline.", ID: -4}
+	dummyList := []msg{dummyMsg1, dummyMsg2, dummyMsg3, dummyMsg4}
 	parseMessages(dummyList)
 
 	switch TEST {
@@ -50,7 +53,9 @@ func main() {
 	case WORD:
 		wordCompare(msgList, dummyList)
 	case FINGERPRINT:
-		fmt.Println("Fingerprint comparison method under construction")
+		//rand.Seed(time.Now)
+		fingerprintCompare(msgList, dummyList)
+		//it may be interesting to fingerprint A vs B and B vs A
 	case ANGULAR:
 		fmt.Println("Angular comparison method under construction")
 	default:
@@ -62,8 +67,30 @@ func angularCompare() {
 
 }
 
-func fingerprintCompare() {
-
+//selects fingerprints from messages in one list
+//and looks for them in messages from the second list
+func fingerprintCompare(msgList1 []msg, msgList2 []msg) {
+	for _, m1 := range msgList1 {
+		//select fingerprint in message 1
+		t1 := m1.NormalizedText
+		t1Len := len(t1)
+		fpSize := int(t1Len / 4)
+		anchor := rand.Intn(t1Len-fpSize)
+		fingerprint := t1[anchor:(anchor+fpSize)]
+		for _, m2 := range msgList2 {
+			t2 := m2.NormalizedText
+			if len(t2) <= fpSize {
+				fmt.Println("Found message too short for fingerprinting, ignoring.")
+				continue
+			}
+			if strings.Contains(t2, fingerprint) {
+				fmt.Println("Found messages with fingerprinting similarity.")
+				fmt.Printf("Fingerprint was [%s].\n", fingerprint)
+				fmt.Printf("Message 1: [%s]\tID: [%d]\n", m1.Text, m1.ID)
+				fmt.Printf("Message 2: [%s]\tID: [%d]\n\n", m2.Text, m2.ID)
+			}
+		}
+	}
 }
 
 //compares messages word by word for similarity, which means
