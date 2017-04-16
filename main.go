@@ -28,10 +28,10 @@ const (
 )
 
 type msg struct {
-	Text   string
-	ID     int
+	Text           string
+	ID             int
 	NormalizedText string
-	Tokens []string
+	Tokens         []string
 }
 
 func main() {
@@ -39,12 +39,11 @@ func main() {
 	msgList := getMessages(access_token, USER)
 	parseMessages(msgList)
 
-	
 	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: -1}
 	dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: -2}
 	dummyList := []msg{dummyMsg1, dummyMsg2}
 	parseMessages(dummyList)
-	
+
 	switch TEST {
 	case MESSAGE:
 		dumbCompare(msgList, dummyList)
@@ -107,7 +106,7 @@ func wordCompare(msgList1 []msg, msgList2 []msg) {
 func dumbCompare(msgList1 []msg, msgList2 []msg) {
 	for _, m1 := range msgList1 {
 		for _, m2 := range msgList2 {
-			if m1.Text == m2.Text {				
+			if m1.Text == m2.Text {
 				fmt.Println("Found duplicate messages:")
 				fmt.Printf("Text: [%s]\tID: [%d]\n", m1.Text, m1.ID)
 				fmt.Printf("Text: [%s]\tID: [%d]\n", m2.Text, m2.ID)
@@ -120,20 +119,20 @@ func dumbCompare(msgList1 []msg, msgList2 []msg) {
 func parseMessages(msgList []msg) {
 	for i, m := range msgList {
 		text := m.Text
-		
+
 		hashtag, _ := regexp.Compile("#")
 		//hashtag, _ := regexp.Compile("#[A-z0-9]+")
 		text = hashtag.ReplaceAllString(text, "")
-		
+
 		usertag, _ := regexp.Compile("(\\.)*@[A-z0-9]+")
 		text = usertag.ReplaceAllString(text, "")
-		
+
 		//we should maybe replace with "<link>" instead?
 		webaddr, _ := regexp.Compile("([A-z0-9]+\\.)*([A-z0-9]+\\.[A-z]{2,})(/[A-z0-9]*)*")
 		text = webaddr.ReplaceAllString(text, "")
-		
+
 		m.NormalizedText = text
-		
+
 		//FieldsFunc: string -> []string, using the given delimiter
 		m.Tokens = strings.FieldsFunc(m.NormalizedText, isSpecialChar)
 		msgList[i] = m
