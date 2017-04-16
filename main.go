@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"unicode"
 )
@@ -29,6 +30,7 @@ const (
 type msg struct {
 	Text   string
 	ID     int
+	NormalizedText string
 	Tokens []string
 }
 
@@ -108,14 +110,27 @@ func dumbCompare(msgList []msg, message msg) {
 	}
 }
 
+//goes over a list of tweets normalizing and tokenizing text
 func parseMessages(msgList []msg) {
 	for i, m := range msgList {
-		//maybe do toLowercase here?
-
-		m.Tokens = strings.FieldsFunc(m.Text, isSpecialChar)
+		text := m.Text
+		
+		hashtag, _ := regexp.Compile("#")
+		//hashtag, _ := regexp.Compile("#[A-z0-9]+")
+		text = hashtag.ReplaceAllString(text, "")
+		
+		usertag, _ := regexp.Compile("(\\.)*@[A-z0-9]+")
+		text = usertag.ReplaceAllString(text, "")
+		
+		//we should maybe replace with "<link>" instead?
+		webaddr, _ := regexp.Compile("([A-z0-9]+\\.)*([A-z0-9]+\\.[A-z]{2,})(/[A-z0-9]*)*")
+		text = webaddr.ReplaceAllString(text, "")
+		
+		m.NormalizedText = text
+		
+		//FieldsFunc: string -> []string, using the given delimiter
+		m.Tokens = strings.FieldsFunc(m.NormalizedText, isSpecialChar)
 		msgList[i] = m
-
-		//add any normalization necessary here
 	}
 }
 
@@ -124,6 +139,7 @@ func isSpecialChar(c rune) bool {
 	return !unicode.IsLetter(c)
 }
 
+//debug function for HTTP data reading
 func debugBody(input io.Reader) {
 	io.Copy(os.Stdout, input)
 }
