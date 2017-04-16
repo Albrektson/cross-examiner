@@ -17,7 +17,7 @@ const (
 	CONSUMER = ""
 	SECRET = ""
 	USER = ""
-	TEST     = FINGERPRINT
+	TEST     = WORD
 )
 
 const (
@@ -39,15 +39,17 @@ func main() {
 	msgList := getMessages(access_token, USER)
 	parseMessages(msgList)
 
-	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: 1}
+	
+	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: -1}
+	dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: -2}
 	dummyList := []msg{dummyMsg1, dummyMsg2}
 	parseMessages(dummyList)
+	
 	switch TEST {
 	case MESSAGE:
 		dumbCompare(msgList, dummyList)
 	case WORD:
-		dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: 1}
-		wordCompare(msgList, dummyMsg2)
+		wordCompare(msgList, dummyList)
 	case FINGERPRINT:
 		fmt.Println("Fingerprint comparison method under construction")
 	case ANGULAR:
@@ -67,36 +69,36 @@ func fingerprintCompare() {
 
 //compares messages word by word for similarity, which means
 //any offset can make near identical messages entirely dissimilar
-func wordCompare(msgList []msg, message msg) {
-	dummyList := []msg{message}
-	parseMessages(dummyList)
-
-	for _, m := range msgList {
-		wordCount := 0
-		duplicates := 0
-		len1 := len(m.Tokens)
-		len2 := len(dummyList[0].Tokens)
-		if len1 < len2 {
-			wordCount = len2
-			for i, w1 := range m.Tokens {
-				w2 := dummyList[0].Tokens[i]
-				if w1 == w2 {
-					duplicates++
+func wordCompare(msgList1 []msg, msgList2 []msg) {
+	for _, m1 := range msgList1 {
+		for _, m2 := range msgList2 {
+			wordCount := 0
+			duplicates := 0
+			len1 := len(m1.Tokens)
+			len2 := len(m2.Tokens)
+			if len1 < len2 {
+				wordCount = len2
+				for i, w1 := range m1.Tokens {
+					w2 := m2.Tokens[i]
+					if w1 == w2 {
+						duplicates++
+					}
+				}
+			} else {
+				wordCount = len1
+				for i, w1 := range m2.Tokens {
+					w2 := m1.Tokens[i]
+					if w1 == w2 {
+						duplicates++
+					}
 				}
 			}
-		} else {
-			wordCount = len1
-			for i, w1 := range dummyList[0].Tokens {
-				w2 := m.Tokens[i]
-				if w1 == w2 {
-					duplicates++
-				}
+			//fmt.Printf("Duplicates: %d, Wordcount: %d\n", duplicates, wordCount)
+			if float64(duplicates)/float64(wordCount) > 0.5 {
+				fmt.Println("Found messages with high similarity rating:")
+				fmt.Printf("Message 1: [%s]\tID: [%d]\n", m1.Text, m1.ID)
+				fmt.Printf("Message 2: [%s]\tID: [%d]\n", m2.Text, m2.ID)
 			}
-		}
-		//fmt.Printf("Duplicates: %d, Wordcount: %d\n", duplicates, wordCount)
-		if float64(duplicates)/float64(wordCount) > 0.5 {
-			fmt.Println("Found messages with high similarity rating:")
-			fmt.Printf("Message 1: %s\nMessage 2: %s\n", m.Text, dummyList[0].Text)
 		}
 	}
 }
