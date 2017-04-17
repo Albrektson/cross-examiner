@@ -181,13 +181,15 @@ func debugBody(input io.Reader) {
 	io.Copy(os.Stdout, input)
 }
 
-//fetches the last 3200 tweets from a given user
+//fetches the last 200 tweets from a given user
 func getMessages(token string, user string) []msg {
 	//build & send twitter userinfo request
 	client := &http.Client{}
 	endpoint := "https://api.twitter.com/1.1/statuses/user_timeline.json"
 	endpoint += "?screen_name=" + user
-	endpoint += "&include_rts=false"
+	endpoint += "&count=200"
+	endpoint += "&include_rts="
+	endpoint += ALLOW_RETWEETS
 	req, err := http.NewRequest("GET", endpoint, nil)
 
 	if err != nil {
