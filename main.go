@@ -17,7 +17,9 @@ import (
 const (
 	CONSUMER = ""
 	SECRET = ""
-	USER = ""
+	USER1     = "cnn"
+	USER2     = "bbc"
+	ALLOW_RETWEETS = "false"
 	TEST     = FINGERPRINT
 )
 
@@ -37,8 +39,10 @@ type msg struct {
 
 func main() {
 	access_token := getAuth(CONSUMER, SECRET)
-	msgList := getMessages(access_token, USER)
-	parseMessages(msgList)
+	msgList1 := getMessages(access_token, USER1)
+	msgList2 := getMessages(access_token, USER2)
+	parseMessages(msgList1)
+	parseMessages(msgList2)
 
 	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: -1}
 	dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: -2}
@@ -49,13 +53,12 @@ func main() {
 
 	switch TEST {
 	case MESSAGE:
-		dumbCompare(msgList, dummyList)
+		dumbCompare(msgList1, dummyList)
 	case WORD:
-		wordCompare(msgList, dummyList)
+		wordCompare(msgList1, dummyList)
 	case FINGERPRINT:
 		//rand.Seed(time.Now)
-		fingerprintCompare(msgList, dummyList)
-		//it may be interesting to fingerprint A vs B and B vs A
+		fingerprintCompare(msgList1, msgList2)
 	case ANGULAR:
 		fmt.Println("Angular comparison method under construction")
 	default:
@@ -71,7 +74,6 @@ func angularCompare() {
 //and looks for them in messages from the second list
 func fingerprintCompare(msgList1 []msg, msgList2 []msg) {
 	for _, m1 := range msgList1 {
-		//select fingerprint in message 1
 		t1 := m1.NormalizedText
 		t1Len := len(t1)
 		fpSize := int(t1Len / 4)
