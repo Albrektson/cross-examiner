@@ -157,7 +157,7 @@ func parseMessages(msgList []msg) {
 		text = usertag.ReplaceAllString(text, "")
 
 		//we should maybe replace with "<link>" instead?
-		webaddr, _ := regexp.Compile("([A-z0-9]+\\.)*([A-z0-9]+\\.[A-z]{2,})(/[A-z0-9]*)*")
+		webaddr, _ := regexp.Compile("([A-z]+\\:\\/\\/)*([A-z0-9]+\\.)*([A-z0-9]+\\.[A-z]{2,})(/[A-z0-9]*)*")
 		text = webaddr.ReplaceAllString(text, "")
 
 		whitespace, _ := regexp.Compile("[[:space:]]")
