@@ -53,7 +53,7 @@ func main() {
 
 	switch TEST {
 	case MESSAGE:
-		dumbCompare(msgList1, dummyList)
+		messageCompare(msgList1, dummyList)
 	case WORD:
 		wordCompare(msgList1, dummyList)
 	case FINGERPRINT:
@@ -132,7 +132,7 @@ func wordCompare(msgList1 []msg, msgList2 []msg) {
 }
 
 //compares if any message in msgList equals another message
-func dumbCompare(msgList1 []msg, msgList2 []msg) {
+func messageCompare(msgList1 []msg, msgList2 []msg) {
 	for _, m1 := range msgList1 {
 		for _, m2 := range msgList2 {
 			if m1.Text == m2.Text {
