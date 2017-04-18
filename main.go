@@ -285,7 +285,7 @@ func parseMessages(msgList []msg, commonWords map[string]int) {
 
 //returns true if char c is not a letter of the alphabet
 func isSpecialChar(c rune) bool {
-	return !unicode.IsLetter(c)
+	return !unicode.IsLetter(c) && c != '\''
 }
 
 //debug function for HTTP data reading
