@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -18,9 +19,12 @@ import (
 const (
 	CONSUMER       = ""
 	SECRET         = ""
+	WORDLIST       = "./common.txt"
 	USER1          = "cnn"
 	USER2          = "bbc"
 	ALLOW_RETWEETS = "false"
+	ANG_THRESHOLD  = 0.5
+	WORD_THRESHOLD = 0.5
 	TEST           = ANGULAR
 )
 
@@ -36,14 +40,17 @@ type msg struct {
 	ID             int
 	NormalizedText string
 	Tokens         []string
+	AngularTokens  []string
 }
 
 func main() {
+	commonWords := readWordlist(WORDLIST)
+	
 	access_token := getAuth(CONSUMER, SECRET)
 	msgList1 := getMessages(access_token, USER1)
 	msgList2 := getMessages(access_token, USER2)
-	parseMessages(msgList1)
-	parseMessages(msgList2)
+	parseMessages(msgList1, commonWords)
+	parseMessages(msgList2, commonWords)
 
 	dummyList := prepDummyData()
 
@@ -62,13 +69,31 @@ func main() {
 	}
 }
 
+//reads common words from file and add to hashmap
+func readWordlist(string filepath) map[string]int {
+	file, err := os.Open(filepath)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	
+	wordmap := make(map[string]int)
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		word := scanner.Text()
+		wordmap[word] = 1
+	}
+	return wordmap
+}
+
 func prepDummyData() []msg {
 	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: -1}
 	dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: -2}
 	dummyMsg3 := msg{Text: "Adding some messages to timeline.", ID: -3}
 	dummyMsg4 := msg{Text: "Selecting messages to include in timeline.", ID: -4}
 	dummyList := []msg{dummyMsg1, dummyMsg2, dummyMsg3, dummyMsg4}
-	parseMessages(dummyList)
+	parseMessages(dummyList, make(map[string]int))
 	return dummyList
 }
 
@@ -78,12 +103,12 @@ func angularCompare(msgList1 []msg, msgList2 []msg) {
 		for _, m2 := range msgList2 {
 			//create vocabulary from both token lists
 			var vocabulary []string
-			for _, word := range m1.Tokens {
+			for _, word := range m1.AngularTokens {
 				if !contains(vocabulary, word) {
 					vocabulary = append(vocabulary, word)
 				}
 			}
-			for _, word := range m2.Tokens {
+			for _, word := range m2.AngularTokens {
 				if !contains(vocabulary, word) {
 					vocabulary = append(vocabulary, word)
 				}
@@ -126,7 +151,8 @@ func angularCompare(msgList1 []msg, msgList2 []msg) {
 			//calculate angular distance
 			angDist := float64(dotVal) / (lenA * lenB)
 
-			if angDist > .5 {
+			//print results
+			if angDist > ANG_THRESHOLD {
 				fmt.Printf("Found messages with high angular similarity: %f.\n", angDist)
 				fmt.Printf("Message 1: [%s]\tID: [%d]\n", m1.Text, m1.ID)
 				fmt.Printf("Message 2: [%s]\tID: [%d]\n\n", m2.Text, m2.ID)
@@ -197,7 +223,7 @@ func wordCompare(msgList1 []msg, msgList2 []msg) {
 				}
 			}
 			//fmt.Printf("Duplicates: %d, Wordcount: %d\n", duplicates, wordCount)
-			if float64(duplicates)/float64(wordCount) > 0.5 {
+			if float64(duplicates)/float64(wordCount) > WORD_THRESHOLD {
 				fmt.Println("Found messages with high similarity rating:")
 				fmt.Printf("Message 1: [%s]\tID: [%d]\n", m1.Text, m1.ID)
 				fmt.Printf("Message 2: [%s]\tID: [%d]\n", m2.Text, m2.ID)
@@ -220,7 +246,7 @@ func messageCompare(msgList1 []msg, msgList2 []msg) {
 }
 
 //goes over a list of tweets normalizing and tokenizing text
-func parseMessages(msgList []msg) {
+func parseMessages(msgList []msg, commonWords map[string]int) {
 	for i, m := range msgList {
 		text := m.Text
 
@@ -241,7 +267,18 @@ func parseMessages(msgList []msg) {
 		m.NormalizedText = text
 
 		//FieldsFunc: string -> []string, using the given delimiter
-		m.Tokens = strings.FieldsFunc(m.NormalizedText, isSpecialChar)
+		tokens := strings.FieldsFunc(m.NormalizedText, isSpecialChar)
+		m.Tokens = tokens
+		
+		angularTokens := make([]string,0)
+		for _, t := range tokens {
+			t = strings.ToLower(t)
+			if commonWords[t] == 0 {
+				angularTokens = append(angularTokens, t)
+			}
+		}
+		m.AngularTokens = angularTokens
+		
 		msgList[i] = m
 	}
 }
