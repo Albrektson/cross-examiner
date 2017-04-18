@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"math/rand"
 	"net/http"
 	"os"
@@ -55,7 +56,7 @@ func main() {
 		//rand.Seed(time.Now)
 		fingerprintCompare(msgList1, msgList2)
 	case ANGULAR:
-		fmt.Println("Angular comparison method under construction")
+		angularCompare(msgList1, msgList2)
 	default:
 		panic("No test case chosen")
 	}
@@ -72,7 +73,77 @@ func prepDummyData() []msg {
 }
 
 func angularCompare(msgList1 []msg, msgList2 []msg) {
+	//Maurer's angular comparison method
+	for _, m1 := range msgList1 {
+		for _, m2 := range msgList2 {
+			//create vocabulary from both token lists
+			var vocabulary []string
+			for _, word := range m1.Tokens {
+				if !contains(vocabulary, word) {
+					vocabulary = append(vocabulary, word)
+				}
+			}
+			for _, word := range m2.Tokens {
+				if !contains(vocabulary, word) {
+					vocabulary = append(vocabulary, word)
+				}
+			}
 
+			//build vector A and B from Tokens against vocabulary
+			vectorSize := len(vocabulary)
+			var vecA = make([]int, vectorSize)
+			var vecB = make([]int, vectorSize)
+			for _, t := range m1.Tokens {
+				for i, w := range vocabulary {
+					if t == w {
+						//no faster way of finding i?
+						vecA[i]++
+						continue
+					}
+				}
+			}
+			for _, t := range m2.Tokens {
+				for i, w := range vocabulary {
+					if t == w {
+						vecB[i]++
+						continue
+					}
+				}
+			}
+
+			//calculate A dot B and length of A & B
+			dotA := 0
+			dotB := 0
+			dotVal := 0
+			for i := 0; i < vectorSize; i++ {
+				dotVal += vecA[i] * vecB[i]
+				dotA += vecA[i] * vecA[i]
+				dotB += vecB[i] * vecB[i]
+			}
+			lenA := math.Sqrt(float64(dotA))
+			lenB := math.Sqrt(float64(dotB))
+
+			//calculate angular distance
+			angDist := float64(dotVal) / (lenA * lenB)
+
+			if angDist > .5 {
+				fmt.Println("Found messages with high angular similarity.")
+				fmt.Printf("Message 1: [%s]\tID: [%d]\n", m1.Text, m1.ID)
+				fmt.Printf("Message 2: [%s]\tID: [%d]\n\n", m2.Text, m2.ID)
+			}
+		}
+	}
+}
+
+//returns true if a given string is found in a given []string
+func contains(list []string, word string) bool {
+	found := false
+	for _, val := range list {
+		if word == val {
+			found = true
+		}
+	}
+	return found
 }
 
 //selects fingerprints from messages in one list
