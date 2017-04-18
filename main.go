@@ -70,7 +70,7 @@ func main() {
 }
 
 //reads common words from file and add to hashmap
-func readWordlist(string filepath) map[string]int {
+func readWordlist(filepath string) map[string]int {
 	file, err := os.Open(filepath)
 	if err != nil {
 		panic(err)
