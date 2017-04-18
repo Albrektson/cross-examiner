@@ -44,12 +44,7 @@ func main() {
 	parseMessages(msgList1)
 	parseMessages(msgList2)
 
-	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: -1}
-	dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: -2}
-	dummyMsg3 := msg{Text: "Adding some messages to timeline.", ID: -3}
-	dummyMsg4 := msg{Text: "Selecting messages to include in timeline.", ID: -4}
-	dummyList := []msg{dummyMsg1, dummyMsg2, dummyMsg3, dummyMsg4}
-	parseMessages(dummyList)
+	dummyList := prepDummyData()
 
 	switch TEST {
 	case MESSAGE:
@@ -66,7 +61,17 @@ func main() {
 	}
 }
 
-func angularCompare() {
+func prepDummyData() []msg {
+	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: -1}
+	dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: -2}
+	dummyMsg3 := msg{Text: "Adding some messages to timeline.", ID: -3}
+	dummyMsg4 := msg{Text: "Selecting messages to include in timeline.", ID: -4}
+	dummyList := []msg{dummyMsg1, dummyMsg2, dummyMsg3, dummyMsg4}
+	parseMessages(dummyList)
+	return dummyList
+}
+
+func angularCompare(msgList1 []msg, msgList2 []msg) {
 
 }
 
