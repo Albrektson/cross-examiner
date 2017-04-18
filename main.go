@@ -15,12 +15,12 @@ import (
 )
 
 const (
-	CONSUMER = ""
-	SECRET = ""
-	USER1     = "cnn"
-	USER2     = "bbc"
+	CONSUMER       = ""
+	SECRET         = ""
+	USER1          = "cnn"
+	USER2          = "bbc"
 	ALLOW_RETWEETS = "false"
-	TEST     = FINGERPRINT
+	TEST           = ANGULAR
 )
 
 const (
@@ -82,8 +82,8 @@ func fingerprintCompare(msgList1 []msg, msgList2 []msg) {
 		t1 := m1.NormalizedText
 		t1Len := len(t1)
 		fpSize := int(t1Len / 4)
-		anchor := rand.Intn(t1Len-fpSize)
-		fingerprint := t1[anchor:(anchor+fpSize)]
+		anchor := rand.Intn(t1Len - fpSize)
+		fingerprint := t1[anchor:(anchor + fpSize)]
 		for _, m2 := range msgList2 {
 			t2 := m2.NormalizedText
 			if len(t2) <= fpSize {
@@ -167,7 +167,7 @@ func parseMessages(msgList []msg) {
 
 		whitespace, _ := regexp.Compile("[[:space:]]")
 		text = whitespace.ReplaceAllString(text, " ")
-		
+
 		m.NormalizedText = text
 
 		//FieldsFunc: string -> []string, using the given delimiter
