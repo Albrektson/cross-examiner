@@ -127,7 +127,7 @@ func angularCompare(msgList1 []msg, msgList2 []msg) {
 			angDist := float64(dotVal) / (lenA * lenB)
 
 			if angDist > .5 {
-				fmt.Println("Found messages with high angular similarity.")
+				fmt.Printf("Found messages with high angular similarity: %f.\n", angDist)
 				fmt.Printf("Message 1: [%s]\tID: [%d]\n", m1.Text, m1.ID)
 				fmt.Printf("Message 2: [%s]\tID: [%d]\n\n", m2.Text, m2.ID)
 			}
@@ -137,13 +137,12 @@ func angularCompare(msgList1 []msg, msgList2 []msg) {
 
 //returns true if a given string is found in a given []string
 func contains(list []string, word string) bool {
-	found := false
 	for _, val := range list {
 		if word == val {
-			found = true
+			return true
 		}
 	}
-	return found
+	return false
 }
 
 //selects fingerprints from messages in one list
