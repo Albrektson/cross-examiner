@@ -20,8 +20,8 @@ const (
 	CONSUMER       = ""
 	SECRET         = ""
 	WORDLIST       = "./common.txt"
-	USER1          = "cnn"
-	USER2          = "bbc"
+	USER1          = "cnnbrk"
+	USER2          = "nasa"
 	ALLOW_RETWEETS = "false"
 	ANG_THRESHOLD  = 0.5
 	WORD_THRESHOLD = 0.5
@@ -49,16 +49,16 @@ func main() {
 	access_token := getAuth(CONSUMER, SECRET)
 	msgList1 := getMessages(access_token, USER1)
 	msgList2 := getMessages(access_token, USER2)
+	msgList1 = readInserts(msgList1, "./data1.txt")
+	msgList2 = readInserts(msgList2, "./data2.txt")
 	parseMessages(msgList1, commonWords)
 	parseMessages(msgList2, commonWords)
 
-	dummyList := prepDummyData()
-
 	switch TEST {
 	case MESSAGE:
-		messageCompare(msgList1, dummyList)
+		messageCompare(msgList1, msgList2)
 	case WORD:
-		wordCompare(msgList1, dummyList)
+		wordCompare(msgList1, msgList2)
 	case FINGERPRINT:
 		//rand.Seed(time.Now)
 		fingerprintCompare(msgList1, msgList2)
@@ -87,14 +87,21 @@ func readWordlist(filepath string) map[string]int {
 	return wordmap
 }
 
-func prepDummyData() []msg {
-	dummyMsg1 := msg{Text: "Adding more messages to timeline.", ID: -1}
-	dummyMsg2 := msg{Text: "Adding more messages to timeline now.", ID: -2}
-	dummyMsg3 := msg{Text: "Adding some messages to timeline.", ID: -3}
-	dummyMsg4 := msg{Text: "Selecting messages to include in timeline.", ID: -4}
-	dummyList := []msg{dummyMsg1, dummyMsg2, dummyMsg3, dummyMsg4}
-	parseMessages(dummyList, make(map[string]int))
-	return dummyList
+func readInserts (msgList []msg, filepath string) []msg {
+	file, err := os.Open(filepath)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		insert := scanner.Text()
+		insertMsg := msg{Text: insert, ID: -1}
+		msgList = append(msgList, insertMsg)
+	}
+	return msgList
 }
 
 func angularCompare(msgList1 []msg, msgList2 []msg) {
@@ -183,7 +190,7 @@ func fingerprintCompare(msgList1 []msg, msgList2 []msg) {
 		for _, m2 := range msgList2 {
 			t2 := m2.NormalizedText
 			if len(t2) <= fpSize {
-				fmt.Println("Found message too short for fingerprinting, ignoring.")
+				//fmt.Println("Found message too short for fingerprinting, ignoring.")
 				continue
 			}
 			if strings.Contains(t2, fingerprint) {
