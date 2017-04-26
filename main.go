@@ -16,12 +16,15 @@ import (
 	"unicode"
 )
 
+//config
 const (
 	CONSUMER       = ""
 	SECRET         = ""
-	WORDLIST       = "./common.txt"
 	USER1          = "cnnbrk"
 	USER2          = "nasa"
+	WORDLIST       = "./common.txt"
+	DATASET1       = "./data1.txt"
+	DATASET2       = "./data2.txt"
 	ALLOW_RETWEETS = "false"
 	ANG_THRESHOLD  = 0.5
 	WORD_THRESHOLD = 0.5
@@ -49,8 +52,8 @@ func main() {
 	access_token := getAuth(CONSUMER, SECRET)
 	msgList1 := getMessages(access_token, USER1)
 	msgList2 := getMessages(access_token, USER2)
-	msgList1 = readInserts(msgList1, "./data1.txt")
-	msgList2 = readInserts(msgList2, "./data2.txt")
+	msgList1 = readInserts(msgList1, DATASET1)
+	msgList2 = readInserts(msgList2, DATASET2)
 	parseMessages(msgList1, commonWords)
 	parseMessages(msgList2, commonWords)
 
