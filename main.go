@@ -13,6 +13,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -28,10 +29,12 @@ const (
 	ALLOW_RETWEETS = "false"
 	ANG_THRESHOLD  = 0.5
 	WORD_THRESHOLD = 0.5
-	TEST           = ANGULAR
+	FP_REPS        = 10
+	TEST           = FINGERPRINT
 )
 
 const (
+	//test case types
 	MESSAGE = iota
 	WORD
 	FINGERPRINT
@@ -52,21 +55,34 @@ func main() {
 	access_token := getAuth(CONSUMER, SECRET)
 	msgList1 := getMessages(access_token, USER1)
 	msgList2 := getMessages(access_token, USER2)
-	msgList1 = readInserts(msgList1, DATASET1)
-	msgList2 = readInserts(msgList2, DATASET2)
+	msgList1, count1 := readInserts(msgList1, DATASET1)
+	msgList2, count2 := readInserts(msgList2, DATASET2)
 	parseMessages(msgList1, commonWords)
 	parseMessages(msgList2, commonWords)
-
+	
+	if count1 != count2 {
+		panic("Dataset insertion count mismatch.")
+	}
+	
 	switch TEST {
 	case MESSAGE:
 		messageCompare(msgList1, msgList2)
 	case WORD:
-		wordCompare(msgList1, msgList2)
+		found := wordCompare(msgList1, msgList2)
+		fmt.Printf("Found %d suspicious pairs, expected to find %d.\n", found, count1)
 	case FINGERPRINT:
-		//rand.Seed(time.Now)
-		fingerprintCompare(msgList1, msgList2)
+		rand.Seed(time.Now().Unix())
+		var hits, falsePositives int
+		for i := 0; i < FP_REPS; i++ {
+			h, fp := fingerprintCompare(msgList1, msgList2)
+			hits += h
+			falsePositives += fp
+		}
+		fmt.Printf("Found %d suspicious pairs and got %d false positives ", hits, falsePositives)
+		fmt.Printf("after %d repetitions, expected %d hits.\n", FP_REPS, count1*FP_REPS)
 	case ANGULAR:
-		angularCompare(msgList1, msgList2)
+		found := angularCompare(msgList1, msgList2)
+		fmt.Printf("Found %d suspicious pairs, expected to find %d.\n", found, count1)
 	default:
 		panic("No test case chosen")
 	}
@@ -90,7 +106,7 @@ func readWordlist(filepath string) map[string]int {
 	return wordmap
 }
 
-func readInserts (msgList []msg, filepath string) []msg {
+func readInserts (msgList []msg, filepath string) ([]msg, int) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		panic(err)
@@ -99,15 +115,19 @@ func readInserts (msgList []msg, filepath string) []msg {
 	
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
+	count := 0
+	id := 0
 	for scanner.Scan() {
+		id--
 		insert := scanner.Text()
-		insertMsg := msg{Text: insert, ID: -1}
+		insertMsg := msg{Text: insert, ID: id}
 		msgList = append(msgList, insertMsg)
+		count++
 	}
-	return msgList
+	return msgList, count
 }
 
-func angularCompare(msgList1 []msg, msgList2 []msg) {
+func angularCompare(msgList1 []msg, msgList2 []msg) (pairs int) {
 	//Maurer's angular comparison method
 	for _, m1 := range msgList1 {
 		for _, m2 := range msgList2 {
@@ -163,12 +183,14 @@ func angularCompare(msgList1 []msg, msgList2 []msg) {
 
 			//print results
 			if angDist > ANG_THRESHOLD {
+				pairs++
 				fmt.Printf("Found messages with high angular similarity: %f.\n", angDist)
 				fmt.Printf("Message 1: [%s]\tID: [%d]\n", m1.Text, m1.ID)
 				fmt.Printf("Message 2: [%s]\tID: [%d]\n\n", m2.Text, m2.ID)
 			}
 		}
 	}
+	return
 }
 
 //returns true if a given string is found in a given []string
@@ -183,7 +205,7 @@ func contains(list []string, word string) bool {
 
 //selects fingerprints from messages in one list
 //and looks for them in messages from the second list
-func fingerprintCompare(msgList1 []msg, msgList2 []msg) {
+func fingerprintCompare(msgList1 []msg, msgList2 []msg) (hits int, falsepos int) {
 	for _, m1 := range msgList1 {
 		t1 := m1.NormalizedText
 		t1Len := len(t1)
@@ -197,6 +219,11 @@ func fingerprintCompare(msgList1 []msg, msgList2 []msg) {
 				continue
 			}
 			if strings.Contains(t2, fingerprint) {
+				if m1.ID == m2.ID {
+					hits++
+				} else {
+					falsepos++
+				}
 				fmt.Println("Found messages with fingerprinting similarity.")
 				fmt.Printf("Fingerprint was [%s].\n", fingerprint)
 				fmt.Printf("Message 1: [%s]\tID: [%d]\n", m1.Text, m1.ID)
@@ -204,11 +231,12 @@ func fingerprintCompare(msgList1 []msg, msgList2 []msg) {
 			}
 		}
 	}
+	return
 }
 
 //compares messages word by word for similarity, which means
 //any offset can make near identical messages entirely dissimilar
-func wordCompare(msgList1 []msg, msgList2 []msg) {
+func wordCompare(msgList1 []msg, msgList2 []msg) (pairs int) {
 	for _, m1 := range msgList1 {
 		for _, m2 := range msgList2 {
 			wordCount := 0
@@ -234,12 +262,14 @@ func wordCompare(msgList1 []msg, msgList2 []msg) {
 			}
 			//fmt.Printf("Duplicates: %d, Wordcount: %d\n", duplicates, wordCount)
 			if float64(duplicates)/float64(wordCount) > WORD_THRESHOLD {
+				pairs++
 				fmt.Println("Found messages with high similarity rating:")
 				fmt.Printf("Message 1: [%s]\tID: [%d]\n", m1.Text, m1.ID)
-				fmt.Printf("Message 2: [%s]\tID: [%d]\n", m2.Text, m2.ID)
+				fmt.Printf("Message 2: [%s]\tID: [%d]\n\n", m2.Text, m2.ID)
 			}
 		}
 	}
+	return
 }
 
 //compares if any message in msgList equals another message
@@ -249,7 +279,7 @@ func messageCompare(msgList1 []msg, msgList2 []msg) {
 			if m1.Text == m2.Text {
 				fmt.Println("Found duplicate messages:")
 				fmt.Printf("Text: [%s]\tID: [%d]\n", m1.Text, m1.ID)
-				fmt.Printf("Text: [%s]\tID: [%d]\n", m2.Text, m2.ID)
+				fmt.Printf("Text: [%s]\tID: [%d]\n\n", m2.Text, m2.ID)
 			}
 		}
 	}
@@ -274,6 +304,8 @@ func parseMessages(msgList []msg, commonWords map[string]int) {
 		whitespace, _ := regexp.Compile("[[:space:]]")
 		text = whitespace.ReplaceAllString(text, " ")
 
+		text = strings.ToLower(text)
+		
 		m.NormalizedText = text
 
 		//FieldsFunc: string -> []string, using the given delimiter
